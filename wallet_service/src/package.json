@@ -1,0 +1,6 @@
+{
+"type":"module",
+  "dependencies": {
+    "@hashgraph/hedera-custodians-integration": "^1.4.1"
+  }
+}
