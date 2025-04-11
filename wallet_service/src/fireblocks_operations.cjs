@@ -2,14 +2,20 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const { readFileSync } = require('fs');
 const { Fireblocks, TransferPeerPathType } = require("@fireblocks/ts-sdk");
+const { Hbar, TransferTransaction, PrivateKey, AccountId, Client } = require("@hashgraph/sdk");
+
 
 const FIREBLOCKS_API_SECRET_PATH = "../../editor_sandbox_lbg_user_secret.key";
+//const FIREBLOCKS_API_SECRET_PATH = "../../converted_key.pem";
+
+const FIREBLOCKS_API_SECRET_DER_PATH = "../../private_key.der";
 
 // Initialize a Fireblocks API instance with local variables
 const fireblocks = new Fireblocks({
     apiKey: "68f17824-2bc4-4803-b573-8d36a562f72a",
     basePath: "https://sandbox-api.fireblocks.io/v1",
     secretKey: readFileSync(FIREBLOCKS_API_SECRET_PATH, "utf8"),
+    testnet: true,
 });
 
 // creating a new vault account
@@ -67,7 +73,53 @@ async function createTransaction(assetId, amount, srcId, destId) {
     }
 
 
+    async function getAddress(){
+        let body = {
+            // The ID of the vault account to return
+            vaultAccountId: 1,
+            // The ID of the asset
+            assetId: "HBAR_TEST"
+          };
+
+          res = await fireblocks.vaults.getVaultAccountAssetAddressesPaginated(body);
+          return res.data.addresses[0].address;
+    }
+
+    async function transferToAddress(destinationAddress) {
+        const operatorIdStr = await getAddress();
+        const operatorKeyStr = readFileSync(FIREBLOCKS_API_SECRET_PATH, "utf8");
+        //const operatorKeyStr = readFileSync(FIREBLOCKS_API_SECRET_DER_PATH, "utf8");
+        
+        
+        const operatorId = AccountId.fromString(operatorIdStr);
+        const operatorKey = await PrivateKey.fromPem(operatorKeyStr);
+        //const operatorKey = await PrivateKey.fromStringDerPem(operatorKeyStr);
+        console.log("Private Key:", operatorKey.toString());
+        //const operatorKey = await PrivateKey.fromStringDer(operatorKeyStr);
+        client = await Client.forTestnet().setOperator(operatorId, operatorKey);
+        console.log(operatorKey);
+
+        const fromAccountId = await getAddress();
+        console.log(fromAccountId);
+        const amount = new Hbar(0.1);
+        const destAddress = "0.0.5784020";
+
+        const transaction = new TransferTransaction()
+            .addHbarTransfer(operatorId, amount.negated())
+            .addHbarTransfer(destAddress, amount);
+        const txResponse = await transaction.execute(client);
+        //Request the receipt of the transaction
+        const receipt = await txResponse.getReceipt(client);
+        //Get the transaction consensus status
+        const transactionStatus = receipt.status;
+
+        console.log(transactionStatus.toString())
+        
+    }
+
+
 /*
+getAddress()
 createVault()
 getVaultPagedAccounts(5)
 
@@ -75,5 +127,5 @@ createTransaction("HBAR_TEST", "0.1", "1", "3").catch(error => {
     console.error('Error creating transaction:', error);
 });
 */
-
-module.exports = {createTransaction, getVaultPagedAccounts, createTransaction}
+transferToAddress("0.0.5784020")
+module.exports = {createTransaction, getVaultPagedAccounts, createTransaction, getAddress}
