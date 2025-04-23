@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { CustodialWalletService, SignatureRequest, FireblocksConfig } = require('@hashgraph/hedera-custodians-integration');
 
-const privateKey = fs.readFileSync(path.join("../..", 'editor_sandbox_lbg_user_secret.key'), 'utf8');
+//const privateKey = fs.readFileSync(path.join("../src/resources/", 'editor_sandbox_lbg_user_secret.key'), 'utf8');
+const privateKey = fs.readFileSync("../src/resources/editor_sandbox_lbg_user_secret.key", 'utf8');
 
 
 const config = new FireblocksConfig(
